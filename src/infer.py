@@ -1,16 +1,11 @@
-import base64
 import json
 import os
-import pickle
 import sys
 import random
-import csv
 import cv2
-import shutil
 import warnings
 
 import editdistance
-import lmdb
 import tensorflow as tf
 import numpy as np
 from collections import namedtuple
@@ -588,7 +583,6 @@ def run_model(decoder, img_file):
 
 def bot_infer(model: Model, fn_img) -> tuple[list[str], str]:
     """Recognizes text in image provided by file path."""
-    #img = cv2.imread(fn_img, cv2.IMREAD_GRAYSCALE)
 
     arr = np.asarray(bytearray(fn_img.read()), dtype=np.uint8)
     img = cv2.imdecode(arr, cv2.IMREAD_GRAYSCALE)  # 'Load it as it is'
