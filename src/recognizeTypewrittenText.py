@@ -40,21 +40,12 @@ def recognize_typewritten_text(img_file):
         for phrase in envelope_phrase:
             phrase_lower = phrase.lower()
             if phrase_lower in data['text'][i]:
-                (x, y, w, h) = (data['left'][i], data['top'][i], data['width'][i], data['height'][i])
-                cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 0), 2)
-                cv2.putText(img, phrase, (x, y), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0), 3)
-
                 num_of_valid_data[phrase] = i
                 break
 
             if phrase_lower.split()[0] in data['text'][i]:
                 if phrase_lower.split()[1] in data['text'][i + 1]:
-                    (x, y, w, h) = (data['left'][i], data['top'][i],
-                                    data['width'][i] + data['width'][i + 1], data['height'][i])
-                    cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 0), 2)
-                    cv2.putText(img, phrase, (x, y), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0), 3)
-
-                    num_of_valid_data[phrase] = i
+                    num_of_valid_data[phrase] = i + 1
 
     for num in num_of_valid_data.items():
 
@@ -70,7 +61,7 @@ def recognize_typewritten_text(img_file):
         if not result:
             result.append(num[0] + ": ")
         else:
-            result.append('\n' + num[0] + ": ")  # Первое слово, ключ.
+            result.append('\n' + num[0] + ": ")
 
         for j in range(n_boxes - num[1] - 2):
             num_current_el += 1
@@ -83,16 +74,8 @@ def recognize_typewritten_text(img_file):
                         break
 
                 if data['top'][num_current_el] - 120 <= y <= data['top'][num_current_el] + 120:
-                    (x1, y1, w1, h1) = (
-                        data['left'][num_current_el], data['top'][num_current_el], data['width'][num_current_el],
-                        data['height'][num_current_el])
-                    cv2.rectangle(img, (x1, y1), (x1 + w1, y1 + h1), (0, 0, 0), 8)
-                    cv2.putText(img, data['text'][num_current_el], (x1, y1), cv2.FONT_HERSHEY_COMPLEX, 5,
-                                (0, 0, 0), 9)
-
                     used_el = num_current_el
                     result.append(data_stock_text[num_current_el])
-
                     break
 
     return result

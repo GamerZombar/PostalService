@@ -10,8 +10,10 @@ from aiogram.utils.markdown import text, bold, italic, code
 
 from config import TOKEN
 
-from PostalService.src.infer import *
+from PostalService.src.recognizeHandwriteText import *
 from PostalService.src.recognizeTypewrittenText import recognize_typewritten_text
+# from PostalService.src.text_classificator import text_type_classification
+from PostalService.src.recognizeAllTypesTexts import recognize_all_types_of_written_text
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
@@ -102,11 +104,16 @@ async def process_photo_command(msg: types.Message):
             i = random.randint(0, len(prediction_process_messages) - 1)
             caption = prediction_process_messages[i % len(prediction_process_messages)].replace('@',
                                                                                                 ' '.join(recognized))
-        if rand == 2 or rand == 4 or rand == 5 or rand == 6 or rand == 7 or rand == 8:
+        if rand == 2 or rand == 4 or rand == 5 or rand == 6 or rand == 8:
             recognized, recognized_corrected = bot_run_model(model, img)
             i = random.randint(0, len(prediction_process_messages) - 1)
             caption = prediction_process_messages[i % len(prediction_process_messages)].replace('@',
                                                                                                 recognized_corrected)
+        if rand == 7:
+            recognized = recognize_all_types_of_written_text(img, model)
+            i = random.randint(0, len(prediction_process_messages) - 1)
+            caption = prediction_process_messages[i % len(prediction_process_messages)].replace('@',
+                                                                                                ' '.join(recognized))
 
         await bot.send_photo(msg.from_user.id, types.InputFile(f"./Demonstration/demo_{rand}.png", "rb"),
                              caption=emojize(caption))
@@ -134,13 +141,11 @@ async def recognize_text(call: types.CallbackQuery):
     i = random.randint(0, len(prediction_process_messages) - 1)
     caption = prediction_process_messages[i % len(prediction_process_messages)].replace('@', ' '.join(recognized))
     await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                text=caption, parse_mode=ParseMode.MARKDOWN)
+                                text=caption)
 
 
 @dp.callback_query_handler(text="handwritten_text")
 async def recognize_text(call: types.CallbackQuery):
-    # try:
-    # try:
     recognized, recognized_corrected = bot_run_model(model, img)
     print(recognized, recognized_corrected)
 
@@ -148,12 +153,25 @@ async def recognize_text(call: types.CallbackQuery):
     caption = prediction_process_messages[i % len(prediction_process_messages)].replace('@', recognized_corrected)
 
     await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                text=caption, parse_mode=ParseMode.MARKDOWN)
+                                text=caption)
+
+
+@dp.callback_query_handler(text="all_types_text")
+async def recognize_text(call: types.CallbackQuery):
+    print("\nНачинаю работу. Сообщение от " + str(call.message.date))
+    recognized = recognize_all_types_of_written_text(img, model)
+
+    i = random.randint(0, len(prediction_process_messages) - 1)
+    caption = prediction_process_messages[i % len(prediction_process_messages)].replace('@', ' '.join(recognized))
+    await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                text=caption)
+
 
 @dp.message_handler(content_types=['photo'])
 async def echo_img(msg: types.Message):
     img_hash = msg.photo[-1]['file_id']
     url = get_path(img_hash)
+
     global img
     img = requests.get(url, stream=True).raw
 
@@ -162,6 +180,8 @@ async def echo_img(msg: types.Message):
                                             callback_data="typewritten_text"))
     keyboard.add(types.InlineKeyboardButton(text="Распознать рукописный текст",
                                             callback_data="handwritten_text"))
+    keyboard.add(types.InlineKeyboardButton(text="Распознать текст любого типа",
+                                            callback_data="all_types_text"))
     await msg.reply("Что мне сделать с этим?", reply_markup=keyboard)
 
 

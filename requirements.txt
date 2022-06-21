@@ -1,0 +1,11 @@
+aiogram
+requests
+numpy
+opencv-python
+pytesseract
+editdistance==0.5.2
+lmdb==1.0.0
+matplotlib==3.2.1
+tensorflow==2.9.1
+pyaspeller==0.2.0
+
