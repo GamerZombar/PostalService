@@ -56,7 +56,7 @@ async def process_start_command(message: types.Message):
         resize_keyboard=True, one_time_keyboard=True
     ).add(KeyboardButton('/help'))
 
-    await message.reply(text('Привет! 👋\nЯ - бот, который любит распознавать текст. 😏'
+    await message.reply(text('Привет! 👋\nЯ - бот, который любит распознавать текст текст с почтовых отправлений. 😏'
                              '\n\nИспользуй /help, чтобы узнать список доступных команд!'),
                         reply_markup=start_kb, parse_mode=ParseMode.MARKDOWN)
 
