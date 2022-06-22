@@ -47,6 +47,8 @@ model = Model(char_list, decoder_type, must_restore=True)
 
 img = None
 
+num_demo_img = 0
+
 
 @dp.message_handler(commands=['start'])
 async def process_start_command(message: types.Message):
@@ -69,15 +71,19 @@ async def process_help_command(message: types.Message):
 
     msg = emojize(
         text(
-            bold('❗❗❗ На данный момент бот находится в бета') + '-' + bold('тестировании') + '.' +
-            bold(' Планируется сделать полную работу в автоматическом режиме') + '.' +
-            bold(' Сейчас можно проверить работоспособность каждого модуля по отдельности❗❗❗'),
+            bold('❗❗❗Помимо автоматического распознавания как Рукописного, так и Машинописного текста, '
+                 'можно проверить работоспособность каждого модуля по отдельности❗❗❗'),
 
-            '\n\nДля распознавания ' + bold('машинописного') + ' (' + bold('печатного') + ')' + ' текста:',
+            '\n\nДля распознавания текста ' + bold('ЛЮБОГО типа') + ':',
             '• Присылай фотографию почтового отправления, а я попробую узнать, что там написано',
 
-            '\nДля распознавания ' + italic('рукописного') + ' текста:',
-            '• Присылай яркое и контрастное фото, с текстом в одну строку, а я попробую угадать, что ты там написал',
+            '\n\nДля распознавания ' + bold('ТОЛЬКО машинописного') + ' (' + bold('печатного') + ')' + ' текста:',
+            '• Отправляй фотографию почтового отправления, без рукописного текста, '
+            'иначе я запутаюсь :smiling_face_with_tear:',
+
+            '\nДля распознавания ' + italic('ТОЛЬКО рукописного') + ' текста:',
+            '• Присылай яркое и контрастное фото, с текстом в одну строку, а я попробую угадать, что ты там написал. ',
+
             bold('\n\nДоступны следующие команды:'),
             '/demo - Проверить нейросеть на случайном изображении (9 вариаций)',
             '/info - Подробная информация о проекте',
@@ -88,34 +94,41 @@ async def process_help_command(message: types.Message):
 
 @dp.message_handler(commands=['demo'])
 async def process_photo_command(msg: types.Message):
-    files = os.listdir(path="./Demonstration")
 
-    rand = random.randint(1, len(files))
+    global num_demo_img
+
+    num_demo_img += 1
+
+    if num_demo_img >= 9:
+        num_demo_img = 0
 
     global img
 
-    with open(f"./Demonstration/demo_{rand}.png", "rb") as image:
+    img_path = f"./Demonstration/demo_{num_demo_img}.png"
+
+    with open(img_path, "rb") as image:
+
         img = image
 
         caption = None
 
-        if rand == 1 or rand == 3 or rand == 9:
+        if num_demo_img == 0 or num_demo_img == 2 or num_demo_img == 8:
             recognized = recognize_typewritten_text(img)
             i = random.randint(0, len(prediction_process_messages) - 1)
             caption = prediction_process_messages[i % len(prediction_process_messages)].replace('@',
                                                                                                 ' '.join(recognized))
-        if rand == 2 or rand == 4 or rand == 5 or rand == 6 or rand == 8:
+        if num_demo_img == 1 or num_demo_img == 3 or num_demo_img == 4 or num_demo_img == 5 or num_demo_img == 7:
             recognized, recognized_corrected = bot_run_model(model, img)
             i = random.randint(0, len(prediction_process_messages) - 1)
             caption = prediction_process_messages[i % len(prediction_process_messages)].replace('@',
                                                                                                 recognized_corrected)
-        if rand == 7:
+        if num_demo_img == 6:
             recognized = recognize_all_types_of_written_text(img, model)
             i = random.randint(0, len(prediction_process_messages) - 1)
             caption = prediction_process_messages[i % len(prediction_process_messages)].replace('@',
                                                                                                 ' '.join(recognized))
 
-        await bot.send_photo(msg.from_user.id, types.InputFile(f"./Demonstration/demo_{rand}.png", "rb"),
+        await bot.send_photo(msg.from_user.id, types.InputFile(img_path, "rb"),
                              caption=emojize(caption))
 
 
@@ -131,7 +144,9 @@ def get_path(hash_name):
 
 @dp.message_handler(commands=['info'])
 async def process_info_command(msg: types.Message):
-    info = text('Создано командой MasterMinds' + '\nБудет заполнено к защите.')
+    info = text('Создано командой MasterMinds' + '\n\nО проекте: project.ai-info.ru/teams/masterminds' +
+                "\nGitHub: https://github.com/GamerZombar/PostalService" +
+                "\n\nДля просмотра инструкции - команда /help")
     await bot.send_message(msg.from_user.id, info)
 
 
@@ -175,14 +190,14 @@ async def echo_img(msg: types.Message):
     global img
     img = requests.get(url, stream=True).raw
 
+
     keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(types.InlineKeyboardButton(text="Распознать машинописный текст",
-                                            callback_data="typewritten_text"))
-    keyboard.add(types.InlineKeyboardButton(text="Распознать рукописный текст",
-                                            callback_data="handwritten_text"))
-    keyboard.add(types.InlineKeyboardButton(text="Распознать текст любого типа",
+    keyboard.add(types.KeyboardButton(text="Только машинописный текст", callback_data="typewritten_text"),
+                 types.KeyboardButton(text="Только рукописный текст", callback_data="handwritten_text"))
+
+    keyboard.add(types.InlineKeyboardButton(text="Текст ЛЮБОГО типа",
                                             callback_data="all_types_text"))
-    await msg.reply("Что мне сделать с этим?", reply_markup=keyboard)
+    await msg.reply("Как вы хотите это распознать?", reply_markup=keyboard)
 
 
 @dp.message_handler(content_types=ContentType.ANY)
